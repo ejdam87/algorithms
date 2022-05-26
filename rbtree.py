@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import math
 from enum import Enum
-from typing import Any, Optional, TextIO
+from typing import Any, Optional, TextIO, Tuple
 
 
 # definice barev
@@ -85,25 +85,175 @@ def rotate_right(tree: RedBlackTree, rotation_root: Node) -> None:
     rotation_root.parent = left_child
 
 
+def insert_fix_up(tree: RedBlackTree, node: Node) -> None:
+    while node.parent is not None and node.parent.color == Colors.red:
+        p = node.parent
+        pp = node.parent.parent
+        assert pp
+        if p == pp.left:
+            d = pp.right
+            if d is not None and d.color == Colors.red:
+                p.color = Colors.black
+                d.color = Colors.black
+                pp.color = Colors.red
+                node = pp
+            elif node == p.right:
+                node = p
+                rotate_left(tree, node)
+            else:
+                p.color = Colors.black
+                pp.color = Colors.red
+                rotate_right(tree, pp)
+        else:
+            d = pp.left
+            if d is not None and d.color == Colors.red:
+                p.color = Colors.black
+                d.color = Colors.black
+                pp.color = Colors.red
+                node = pp
+            elif node == p.left:
+                node = p
+                rotate_right(tree, node)
+            else:
+                p.color = Colors.black
+                pp.color = Colors.red
+                rotate_left(tree, pp)
+
+    assert tree.root
+    tree.root.color = Colors.black
+
+
 def insert(tree: RedBlackTree, key: Any) -> None:
     """Vlozi novy uzel s klicem 'key' do stromu 'tree'. Operace zachova
     korektni cerveno-cerny strom.
     """
-    pass
+    node = Node()
+    node.key = key
+
+    y = None
+    x = tree.root
+    while x is not None:
+        y = x
+        if key < x.key:
+            x = x.left
+        else:
+            x = x.right
+    node.parent = y
+
+    if y is None:
+        tree.root = node
+    elif node.key < y.key:
+        y.left = node
+    else:
+        y.right = node
+
+    node.color = Colors.red
+    insert_fix_up(tree, node)
+
+
+def search_rec(node: Optional[Node], key: Any) -> Optional[Node]:
+    if node is None or node.key == key:
+        return node
+
+    if node.key > key:
+        return search_rec(node.left, key)
+
+    return search_rec(node.right, key)
 
 
 def search(tree: RedBlackTree, key: Any) -> Optional[Node]:
     """Vyhleda uzel s klicem 'key' ve strome 'tree'. Vrati uzel
     s hledanym klicem. Pokud se klic 'key' v strome nenachazi vraci None.
     """
-    pass
+    return search_rec(tree.root, key)
+
+
+def black_height(node: Optional[Node]) -> int:
+    if node is None:
+        return 0
+
+    if node.color == Colors.black:
+        return 1 + max(black_height(node.left), black_height(node.right))
+
+    return max(black_height(node.left), black_height(node.right))
+
+
+def is_correct_rb_tree_rec(
+    node: Optional[Node], min_val: float, max_val: float, height: int
+) -> bool:
+    if node is None:
+        return height == 0
+
+    if node.key < min_val or node.key > max_val:
+        return False
+
+    if node.color == Colors.black:
+        height -= 1
+    elif node.parent is not None and node.parent.color == Colors.red:
+        return False  # red node with red parent
+
+    return (is_correct_rb_tree_rec(node.left, min_val, node.key, height) and
+            is_correct_rb_tree_rec(node.right, node.key, max_val, height))
 
 
 def is_correct_rb_tree(tree: RedBlackTree) -> bool:
     """Overi jestli je strom 'tree' korektni cerveno-cerny vyhledavaci
     strom. Pokud ano vraci True, jinak False.
     """
-    pass
+    if tree.root is not None and tree.root.color == Colors.red:
+        return False
+
+    return is_correct_rb_tree_rec(tree.root, -math.inf, math.inf,
+                                  black_height(tree.root))
+
+
+def is_correct_rb_tree_alt(tree: RedBlackTree) -> bool:
+    """Overi jestli je strom 'tree' korektni cerveno-cerny vyhledavaci
+    strom. Pokud ano vraci True, jinak False.
+
+    Tato alternativni verze provede pouze jeden pruchod stromem a slouzi
+    hlavne jako ukazka toho, ze v rekurzi si muzeme vracet vice nez jednu
+    hodnotu.
+    """
+    if tree.root is not None and tree.root.color == Colors.red:
+        return False
+
+    return is_correct_rb_tree_alt_rec(tree.root, -math.inf, math.inf)[0]
+
+
+def is_correct_rb_tree_alt_rec(
+    node: Optional[Node], min_val: float, max_val: float
+) -> Tuple[bool, int]:
+    """Vraci dvojici (korektni_podstrom, cerna_hloubka_podstromu),
+    pricemz prvni cast je pravdivostni hodnota (bool), druha cislo (int).
+    Pokud je prvni cast dvojice False, druha cast je nepodstatna, proto
+    si muzeme v techto pripadech dovolit vratit (False, cokoliv).
+    """
+    if node is None:
+        return True, 0
+
+    if node.key < min_val or node.key > max_val:
+        return False, 0
+
+    l_correct, l_height = is_correct_rb_tree_alt_rec(node.left,
+                                                     min_val, node.key)
+
+    # drobna optimalizace: nemusime prochazet pravy podstrom, kdyz vime,
+    # ze levy podstrom neni korektni
+    if not l_correct:
+        return False, 0
+
+    r_correct, r_height = is_correct_rb_tree_alt_rec(node.right,
+                                                     node.key, max_val)
+
+    height = r_height
+
+    if node.color == Colors.black:
+        height += 1
+    elif node.parent is not None and node.parent.color == Colors.red:
+        return False, 0 # red node with red parent
+
+    return r_correct and l_height == r_height, height
 
 
 # Dodatek k graphvizu:
@@ -211,7 +361,6 @@ def init_unbalanced_tree_left() -> RedBlackTree:
 
 def helper_test_rotate_left(tree: RedBlackTree) -> bool:
     assert tree.root
-
     rotate_left(tree, tree.root)
 
     assert tree.root.right
@@ -461,6 +610,16 @@ def helper_test_is_correct_rb_tree_1(tree: RedBlackTree) -> bool:
 
     if is_correct_rb_tree(tree):
         print("NOK - strom nema stejnou cernou hloubku")
+        return False
+
+    assert tree.root.left.left
+    tree.root.left.color = Colors.red
+    tree.root.left.left.color = Colors.red
+    tree.root.left.right = None
+    tree.root.right = None
+
+    if is_correct_rb_tree(tree):
+        print("NOK - cerveny uzel s cervenym rodicem")
         return False
 
     return True

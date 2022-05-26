@@ -39,89 +39,55 @@ class BTree:
         self.root: Optional[Node] = None
 
 
-def inorder_rec(node: Optional[Node]) -> None:
-    
-    if not node:
-        return
-
-    for i in range(len(node.keys)):
-
-        if not node.leaf:
-            inorder_rec(node.children[i])
-
-        print(node.keys[i])
-
-    if not node.leaf:
-        inorder_rec(node.children[-1])
-
-
-def preorder_rec(node: Optional[Node]) -> None:
-
-    if not node:
-        return
-
-    for key in node.keys:
-        print(key)
-
-    for child in node.children:
-        preorder_rec(child)
-
-
-def postorder_rec(node: Optional[Node]) -> None:
-
-    if not node:
-        return
-
-    for child in node.children:
-        postorder_rec(child)
-
-    for key in node.keys:
-        print(key)
-
-
 def in_order_print(tree: BTree) -> None:
     """Vypise B-strom 'tree' pomoci inorder pruchodu. Pro vypis
     pouzivejte print. Hodnoty odsazujte mezerami nebo odradkovanim.
     """
-    inorder_rec(tree.root)
+    if tree.root is not None:
+        in_order_print_rec(tree.root)
+
+
+def in_order_print_rec(node: Node) -> None:
+    if node.leaf:
+        for key in node.keys:
+            print(key)
+
+    for i, child in enumerate(node.children):
+        in_order_print_rec(child)
+        if i < len(node.keys):
+            print(node.keys[i])
 
 
 def pre_order_print(tree: BTree) -> None:
     """Vypise B-strom 'tree' pomoci preorder pruchodu. Pro vypis
     pouzivejte print. Hodnoty odsazujte mezerami nebo odradkovanim.
     """
-    preorder_rec(tree.root)
+    if tree.root is not None:
+        pre_order_print_rec(tree.root)
+
+
+def pre_order_print_rec(node: Node) -> None:
+    for key in node.keys:
+        print(key)
+
+    for child in node.children:
+        pre_order_print_rec(child)
 
 
 def post_order_print(tree: BTree) -> None:
     """Vypise B-strom 'tree' pomoci postorder pruchodu. Pro vypis
     pouzivejte print. Hodnoty odsazujte mezerami nebo odradkovanim.
     """
-    postorder_rec(tree.root)
+    if tree.root is not None:
+        post_order_print_rec(tree.root)
 
 
-def search_rec(node: Optional[Node], key: Any) -> Optional[Node]:
+def post_order_print_rec(node: Node) -> None:
+    for child in node.children:
+        post_order_print_rec(child)
 
-    if not node:
-        return None
-
-    for i in range(len(node.keys)):
-
-        if node.keys[i] == key:
-            return node
-
-        if key < node.keys[i]:
-
-            index = i - 1 if i != 0 else i
-            if not node.leaf:
-                return search_rec(node.children[index], key)
-            else:
-                return None
-
-    if node.leaf:
-        return None
-    else:
-        return search_rec(node.children[-1], key)
+    for key in node.keys:
+        print(key)
 
 
 def search(tree: BTree, key: Any) -> Optional[Node]:
@@ -129,43 +95,114 @@ def search(tree: BTree, key: Any) -> Optional[Node]:
     kterem se nachazi klic. Pokud se klic 'key' v B-strome nenachazi,
     vraci None.
     """
-    # TODO
+    if tree.root is None:
+        return None
+
     return search_rec(tree.root, key)
 
 
+def search_rec(node: Node, key: Any) -> Optional[Node]:
+    i = 0
 
-def preorder_traversal(node: Optional[Node], res: List[int]) -> None:
+    while i < len(node.keys) and key > node.keys[i]:
+        i = i + 1
 
-    if not node:
-        return
+    if i < len(node.keys) and node.keys[i] == key:
+        return node
 
-    for key in node.keys:
-        res.append(key)
+    if node.leaf:
+        return None
 
-    for child in node.children:
-        preorder_traversal(child, res)
+    return search_rec(node.children[i], key)
 
 
 def is_equiv(tree1: BTree, tree2: BTree) -> bool:
-    """Overi, jestli jsou 2 B-stromy ekvivalentni. Pokud ano, vraci
+    """Overi, jestli jsou dva B-stromy ekvivalentni. Pokud ano, vraci
     True, jinak False.
     """
-    
-    preorder1 = []
-    preorder2 = []
+    if tree1.root is None or tree2.root is None:
+        return tree1.root == tree2.root
 
-    preorder_traversal(tree1.root, preorder1)
-    preorder_traversal(tree2.root, preorder2)
+    return is_equiv_rec(tree1.root, tree2.root)
 
-    return preorder1 == preorder2
+
+def is_equiv_rec(node1: Node, node2: Node) -> bool:
+    if node1.keys != node2.keys:
+        return False
+
+    for i in range(len(node1.children)):
+        if not is_equiv_rec(node1.children[i], node2.children[i]):
+            return False
+
+    return True
 
 
 def insert(tree: BTree, key: Any) -> None:
     """Vlozi klic 'key' do B-stromu 'tree'. Operace implementuje
     preemptivne stepeni. Muzete predpokladat, ze B-strom ma sudou aritu.
     """
-    # TODO
-    pass
+    root = tree.root
+    if root is None:
+        new_root = Node()
+        new_root.leaf = True
+        new_root.keys.append(key)
+        tree.root = new_root
+    elif len(root.keys) == tree.arity - 1:
+        new_root = Node()
+        tree.root = new_root
+        new_root.children.append(root)
+        split(new_root, 0, tree.arity)
+        insert_nonfull(new_root, key, tree.arity)
+    else:
+        insert_nonfull(root, key, tree.arity)
+
+
+def split(node: Node, i: int, arity: int) -> None:
+    new_node = Node()
+    child = node.children[i]
+    new_node.leaf = child.leaf
+    degree = arity // 2
+
+    for j in range(degree - 1):
+        new_node.keys.append(child.keys[j + degree])
+
+    if not child.leaf:
+        for j in range(degree):
+            new_node.children.append(child.children[j + degree])
+        for j in range(degree):
+            child.children.pop()
+
+    node.children.append(None)
+    for j in range(len(node.keys), i, -1):
+        node.children[j + 1] = node.children[j]
+    node.children[i + 1] = new_node
+
+    node.keys.append(None)
+    for j in range(len(node.keys) - 2, i - 1, -1):
+        node.keys[j + 1] = node.keys[j]
+    node.keys[i] = child.keys[degree - 1]
+
+    for j in range(degree):
+        child.keys.pop()
+
+
+def insert_nonfull(node: Node, key: Any, arity: int) -> None:
+    if node.leaf:
+        i = len(node.keys) - 1
+        node.keys.append(None)
+        while i >= 0 and key < node.keys[i]:
+            node.keys[i + 1] = node.keys[i]
+            i = i - 1
+        node.keys[i + 1] = key
+    else:
+        i = 0
+        while i < len(node.keys) and key > node.keys[i]:
+            i = i + 1
+        if len(node.children[i].keys) == arity - 1:
+            split(node, i, arity)
+            if key > node.keys[i]:
+                i = i + 1
+        insert_nonfull(node.children[i], key, arity)
 
 
 # Dodatek k graphvizu:
