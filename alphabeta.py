@@ -15,10 +15,10 @@ class MinmaxTree:
         self.root = root
 
 
-def minmax(tree: MinmaxTree) -> int | None:
-    return minmax_rec(tree.root) if tree.root is not None else None
+def alphabeta(tree: MinmaxTree) -> int | None:
+    return alphabeta_rec(tree.root, -math.inf, math.inf) if tree.root is not None else None
 
-def minmax_rec(node: Node) -> int:
+def alphabeta_rec(node: Node, alpha: float, beta: float) -> int:
     
     if node.children == []:
         return node.value
@@ -26,13 +26,24 @@ def minmax_rec(node: Node) -> int:
     if node.node_type == MIN:
         res = math.inf
         for child in node.children:
-            val = minmax_rec(child)
+            val = alphabeta_rec(child, alpha, beta)
             res = min(val, res)
+
+            if res <= alpha:
+                break
+
+            beta = min(beta, res)
+
     else:
         res = -math.inf
         for child in node.children:
-            val = minmax_rec(child)
+            val = alphabeta_rec(child, alpha, beta)
             res = max(val, res)
+
+            if res >= beta: # prunning
+                break
+
+            alpha = max(alpha, res)
 
     return res
 
