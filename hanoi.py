@@ -14,7 +14,7 @@ def hanoi_rec(n: int,
               source: str,
               dest: str,
               spare: str,
-              res: Transition_list) -> list[ Transition ]:
+              res: list[ Transition ]) -> list[ Transition ]:
 
     if n == 1:
         res.append( (source, dest) )
@@ -23,3 +23,5 @@ def hanoi_rec(n: int,
     hanoi_rec( n - 1, source, spare, dest, res )
     res.append( (source, dest) )
     hanoi_rec( n - 1, spare, dest, source, res )
+
+print( hanoi( 3, "A", "B", "C" ) )

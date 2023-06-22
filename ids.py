@@ -31,7 +31,7 @@ def ids(graph: Graph) -> List[int]:
 
     visited = [WHITE for _ in range(graph.size)]
 
-    while WHITE in visited:
+    while WHITE in visited: ## with given limit, we did not traverse all the graph
 
         visited = [WHITE for _ in range(graph.size)]
         dfs_limit(graph, 0, limit, visited, order)
