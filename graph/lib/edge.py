@@ -1,4 +1,4 @@
-import vertex as v
+import lib.vertex as v
 
 class Edge:
     def __init__( self, v1: v.Vertex, v2: v.Vertex ) -> None:
@@ -41,3 +41,8 @@ class WUEdge( Edge ):
 class WDEdge( WUEdge ):
     def is_directed( self ) -> bool:
         return True
+
+class NetworkEdge( WDEdge ):
+    def __init__( self, v1: v.Vertex, v2: v.Vertex, w: float ) -> None:
+        super().__init__( v1, v2, w )
+        self.flow = 0

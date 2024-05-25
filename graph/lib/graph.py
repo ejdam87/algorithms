@@ -1,5 +1,5 @@
-import edge   as e
-import vertex as v
+import lib.edge   as e
+import lib.vertex as v
 
 from typing import Iterator
 
@@ -25,6 +25,9 @@ class Graph:
 
     def add_edge( self, v1: v.Vertex, v2: v.Vertex ) -> e.Edge:
         return NotImplemented
+
+    def rem_edge(self, e: e.Edge) -> None:
+        self.edges.remove(e)
 
     def successors( self, v: v.Vertex ) -> Iterator[ v.Vertex ]:
         return NotImplemented
@@ -56,7 +59,8 @@ class DGraph( Graph ):
         Directed
         """
         for edge in self.edges:
-            v1, v2 = edge.get_verices()
+            v1, v2 = edge.v1, edge.v2
+            print(type(v), type(v1))
             if v == v1:
                 yield v2
 
@@ -64,6 +68,13 @@ class DGraph( Graph ):
         new = e.DEdge( v1, v2 )
         self.edges.append( new )
         return new
+
+    def get_edge( self, v1: v.Vertex, v2: v.Vertex ) -> e.Edge:
+        for edge in self.edges:
+            if edge.v1 == v1 and edge.v2 == v2:
+                return edge
+
+        return None
 
 
 class WUGraph( UGraph ):
@@ -85,3 +96,23 @@ class WDGraph( DGraph ):
         new = e.WDEdge( v1, v2 )
         self.edges.append( new )
         return new
+
+class Network( WDGraph ):
+    def add_edge( self, v1: v.Vertex, v2: v.Vertex, w: float ) -> e.Edge:
+        new = e.NetworkEdge( v1, v2, w )
+        self.edges.append( new )
+        return new
+
+    def show(self) -> None:
+        print("Digraph N {")
+        for i, vertex in enumerate(self.vertices):
+            if i == self.size - 1:
+                print(vertex)
+            else:
+                print(vertex, end=",")
+
+        for edge in self.edges:
+            print(f'{edge.v1} -> {edge.v2} [label="{edge.flow}/{edge.weight}"]')
+        print()
+
+        print("}")
