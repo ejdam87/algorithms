@@ -78,6 +78,9 @@ def fix_residual(net: Network, res: Network) -> None:
             er = res.get_edge( edge.v1, edge.v2 )
             er.weight = edge.weight - edge.flow
             er = res.get_edge( edge.v2, edge.v1 )
+            if er is None:
+                res.add_edge( deepcopy(edge.v2), deepcopy(edge.v1), 0 )
+            er = res.get_edge( edge.v2, edge.v1 )
             er.weight = edge.flow
 
 
@@ -94,10 +97,13 @@ def ford_fulkerson(net: Network, s: Vertex, t: Vertex) -> Network:
     return net
 
 
-net = Network(2)
+net = Network(3)
+
 net.add_edge(net.vertices[0], net.vertices[1], 5)
+net.add_edge(net.vertices[1], net.vertices[2], 3)
+
 s = net.vertices[0]
-t = net.vertices[1]
+t = net.vertices[2]
 
 ford_fulkerson(net, s, t)
 net.show()

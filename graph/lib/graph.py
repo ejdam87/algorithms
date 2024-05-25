@@ -60,7 +60,6 @@ class DGraph( Graph ):
         """
         for edge in self.edges:
             v1, v2 = edge.v1, edge.v2
-            print(type(v), type(v1))
             if v == v1:
                 yield v2
 
